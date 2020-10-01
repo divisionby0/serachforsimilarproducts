@@ -1,5 +1,6 @@
 /// <reference path="iterators/MapIterator.ts"/>
 /// <reference path="json/MapJsonEncoder.ts"/>
+///<reference path="iterators/KeyMapIterator.ts"/>
 var KeyMap = (function () {
     function KeyMap(id) {
         this.keys = new Array();
@@ -47,7 +48,7 @@ var KeyMap = (function () {
         return this.keys.length;
     };
     KeyMap.prototype.getIterator = function () {
-        return new MapIterator(this);
+        return new KeyMapIterator(this);
     };
     KeyMap.prototype.setId = function (id) {
         this.id = id;

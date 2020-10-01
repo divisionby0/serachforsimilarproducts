@@ -1,6 +1,6 @@
 ///<reference path="../KeyMap.ts"/>
 
-class MapIterator{
+class KeyMapIterator{
     private collection:KeyMap<any>;
 
     private counter:number = -1;

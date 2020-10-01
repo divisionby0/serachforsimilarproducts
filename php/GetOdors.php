@@ -20,12 +20,11 @@ class GetOdors
 
     private function getOdors(){
         $odors = get_posts( array(
-            'numberposts' => 60,
+            'numberposts' => -1,
             'category'    => $this->productCategories,
             'post_type'   => 'post',
             'suppress_filters' => true
         ) );
-        
         return $this->parseOdors($odors);
     }
 
@@ -33,8 +32,5 @@ class GetOdors
     {
         $parser = new OdorsParser($odors);
         return $parser->parse();
-
-        //$finder = new SimilarFinder($odors);
-        //$finder->find();
     }
 }

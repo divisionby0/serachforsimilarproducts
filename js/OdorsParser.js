@@ -5,18 +5,15 @@ var OdorsParser = (function () {
         this.data = data;
     }
     OdorsParser.prototype.parse = function () {
-        var dataArray = JSON.parse(this.data);
-        console.log("dataArray=", dataArray);
         var collection = new KeyMap("odors");
         var i;
-        for (i = 0; i < dataArray.length; i++) {
-            var odorData = JSON.parse(dataArray[i]);
+        for (i = 0; i < this.data.length; i++) {
+            var odorData = this.data[i];
             var id = odorData.id;
-            var name = odorData.name;
-            var permalink = odorData.permalink;
-            var types = JSON.parse(odorData.types);
-            var notes = JSON.parse(odorData.notes);
-            collection.add(id, new Odor(id, name, types, notes, permalink));
+            var name = odorData.title;
+            odorData.types.sort();
+            odorData.notes.sort();
+            collection.add(id, new Odor(id, name, odorData.types, odorData.notes));
         }
         return collection;
     };

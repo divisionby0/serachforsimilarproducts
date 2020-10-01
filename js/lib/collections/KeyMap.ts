@@ -1,5 +1,6 @@
 /// <reference path="iterators/MapIterator.ts"/>
 /// <reference path="json/MapJsonEncoder.ts"/>
+///<reference path="iterators/KeyMapIterator.ts"/>
 class KeyMap<T> {
     private id:string;
     private items: { [key: string]: T };
@@ -59,8 +60,8 @@ class KeyMap<T> {
     size(): number {
         return this.keys.length;
     }
-    getIterator():MapIterator{
-        return new MapIterator(this);
+    getIterator():KeyMapIterator{
+        return new KeyMapIterator(this);
     }
     setId(id:string):void{
         this.id = id;
