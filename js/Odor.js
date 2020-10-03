@@ -43,9 +43,6 @@ var Odor = (function () {
     Odor.prototype.getSimilarOdorsIterator = function () {
         return this.similarOdors.getIterator();
     };
-    Odor.prototype.getSimilarKeys = function () {
-        return this.similarOdors.getKeys();
-    };
     return Odor;
 }());
 //# sourceMappingURL=Odor.js.map

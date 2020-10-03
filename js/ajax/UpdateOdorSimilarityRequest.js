@@ -8,12 +8,12 @@ var UpdateOdorSimilarityRequest = (function () {
     }
     UpdateOdorSimilarityRequest.prototype.execute = function () {
         var _this = this;
+        this.startTime = new Date();
         var data = {
             'action': 'update_similarity',
             'odorId': this.odorId,
             'similarOdors': JSON.stringify(this.similarOdorIDs)
         };
-        console.log("data=", data);
         this.j$.ajax({
             type: "POST",
             url: ajaxurl,
@@ -24,18 +24,11 @@ var UpdateOdorSimilarityRequest = (function () {
         });
     };
     UpdateOdorSimilarityRequest.prototype.onResponse = function (response) {
-        console.log("Update similar response:", response);
-        if (response) {
-            if (response.result == "1") {
-                EventBus.dispatchEvent("UPDATE_ODOR_SIMILARITY_COMPLETE", "");
-            }
-            else if (response.error) {
-                EventBus.dispatchEvent("UPDATE_ODOR_SIMILARITY_ERROR", response.error);
-            }
-        }
-        else {
-            EventBus.dispatchEvent("UPDATE_ODOR_SIMILARITY_ERROR", "response is empty");
-        }
+        var finishTime = new Date();
+        var dif = this.startTime.getTime() - finishTime.getTime();
+        var Seconds_from_T1_to_T2 = dif / 1000;
+        var Seconds_Between_Dates = Math.abs(Seconds_from_T1_to_T2);
+        EventBus.dispatchEvent("UPDATE_ODOR_SIMILARITY_COMPLETE", Seconds_Between_Dates);
     };
     UpdateOdorSimilarityRequest.prototype.onFail = function (xhr, status, error) {
         EventBus.dispatchEvent("UPDATE_ODOR_SIMILARITY_ERROR", error);

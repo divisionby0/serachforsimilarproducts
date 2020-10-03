@@ -28,7 +28,7 @@ class Odor{
     public getNotes():string[]{
         return this.notes;
     }
-
+    
     public removeSimilarOdor(id:string):void{
         if(this.similarOdors.has(id)){
             this.similarOdors.remove(id);
@@ -55,9 +55,5 @@ class Odor{
     
     public getSimilarOdorsIterator():KeyMapIterator{
         return this.similarOdors.getIterator();
-    }
-
-    public getSimilarKeys():string[]{
-        return this.similarOdors.getKeys();
     }
 }

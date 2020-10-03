@@ -1,7 +1,7 @@
-/// <reference path="../Map.ts"/>
+///<reference path="../KeyMap.ts"/>
 var MapJsonDecoder = (function () {
     function MapJsonDecoder(dataString) {
-        this.rootMap = new Map('rootMap');
+        this.rootMap = new KeyMap('rootMap');
         this.dataString = dataString;
     }
     MapJsonDecoder.prototype.decode = function () {
@@ -21,7 +21,7 @@ var MapJsonDecoder = (function () {
                 var valueId = value["id"];
                 var valueType = value["type"];
                 if (key != "id" && key != "type" && valueType == "Map") {
-                    var subMap = new Map(valueId);
+                    var subMap = new KeyMap(valueId);
                     parentMap.add(key, this.parseObjectToMap(value, subMap));
                 }
                 else {
@@ -37,5 +37,5 @@ var MapJsonDecoder = (function () {
         return parentMap;
     };
     return MapJsonDecoder;
-})();
+}());
 //# sourceMappingURL=MapJsonDecoder.js.map

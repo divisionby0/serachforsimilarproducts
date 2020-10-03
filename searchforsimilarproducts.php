@@ -14,6 +14,7 @@ include_once ("php/OdorsParser.php");
 include_once ("php/SimilarFinder.php");
 
 includeJS();
+includeCss();
 
 
 $catIDs;
@@ -23,6 +24,19 @@ if(isset($_POST['SearchButton'])){
     $similarOdorsFinder->start();
 }
 */
+
+function similarsearchshortcode_function(){
+    $isProduct = detectIsProduct();
+
+    echo "<p>is product:".$isProduct."</p>";
+
+    /*
+    if($isProduct == true || $isProduct == 1){
+        createMetaboxes();
+    }
+    */
+}
+add_shortcode('similarsearchshortcode', 'similarsearchshortcode_function');
 
 
 // AJAX
@@ -79,54 +93,164 @@ function update_similarity_callback() {
     for($i=0; $i<sizeof($simDataArray); $i++){
         array_push($simArray, $simDataArray[$i]);
     }
-
-    //$simArray = array();
-    //update_post_meta( 9171, 'similar', array(9123,9107, 9139));
-
+    
     $result = update_post_meta( $odorId, 'similar', $similarOdors);
-    //$result = update_post_meta( $odorId, 'similar', $similarOdors);
 
     echo json_encode($result);
     wp_die();
 }
 
+add_action( 'wp_ajax_save_plugin_settings', 'save_plugin_settings_callback' );
+function save_plugin_settings_callback() {
+    $maxNoteSimilarityPercentageAllocated = $_POST["maxNoteSimilarityPercentageAllocated"];
+    $minNoteSimilarityPercentageToAllow = $_POST["minNoteSimilarityPercentageToAllow"];
 
-function includeJS(){
-    wp_enqueue_script( 'keyMap', plugin_dir_url( __FILE__ ) . '/js/lib/collections/KeyMap.js');
-    wp_enqueue_script( 'list', plugin_dir_url( __FILE__ ) . '/js/lib/collections/List.js');
-    wp_enqueue_script( 'ListIterator', plugin_dir_url( __FILE__ ) . '/js/lib/collections/iterators/ListIterator.js');
-    wp_enqueue_script( 'KeyMapIterator', plugin_dir_url( __FILE__ ) . '/js/lib/collections/iterators/KeyMapIterator.js');
-    wp_enqueue_script( 'eventBus', plugin_dir_url( __FILE__ ) . '/js/lib/events/EventBus.js');
-
-    wp_enqueue_script( 'Odor', plugin_dir_url( __FILE__ ) . '/js/Odor.js');
-    wp_enqueue_script( 'OdorsParser', plugin_dir_url( __FILE__ ) . '/js/OdorsParser.js');
-    wp_enqueue_script( 'GetOdorsRequest', plugin_dir_url( __FILE__ ) . '/js/ajax/GetOdorsRequest.js');
-    wp_enqueue_script( 'UpdateOdorSimilarityRequest', plugin_dir_url( __FILE__ ) . '/js/ajax/UpdateOdorSimilarityRequest.js');
-    wp_enqueue_script( 'similarFinder', plugin_dir_url( __FILE__ ) . '/js/SimilarFinder.js');
-    wp_enqueue_script( 'similarFinderApp', plugin_dir_url( __FILE__ ) . '/js/SimilarFinderApp.js');
-    wp_enqueue_script( 'findSimilar', plugin_dir_url( __FILE__ ) . '/js/findSimilar.js', array ( 'jquery' ), null, true);
+    if(false == get_option( 'maxNoteSimilarityPercentageAllocated')){
+        $result = add_option('maxNoteSimilarityPercentageAllocated', $maxNoteSimilarityPercentageAllocated);
+    }
+    else{
+        $result = update_option('maxNoteSimilarityPercentageAllocated',$maxNoteSimilarityPercentageAllocated);
+    }
+    
+    if(false == get_option( 'minNoteSimilarityPercentageToAllow')){
+        $result = add_option('minNoteSimilarityPercentageToAllow', $minNoteSimilarityPercentageToAllow);
+    }
+    else{
+        $result = update_option('minNoteSimilarityPercentageToAllow',$minNoteSimilarityPercentageToAllow);
+    }
+    
+    echo $result;
+    wp_die();
 }
 
-function serachforsimilarproducts_admin_page(){
+function searchforsimilarproducts_admin_page(){
+    $defaultMaxNoteSimilarityPercentageAllocated = 90;
+    $defaultMinNoteSimilarityPercentageToAllow = 19;
+
+    $maxOdorsToLoad = -1;
+
+    $maxNoteSimilarityPercentageAllocatedOption = get_option( 'maxNoteSimilarityPercentageAllocated');
+    $minNoteSimilarityPercentageToAllow = get_option( 'minNoteSimilarityPercentageToAllow');
+
+    if($maxNoteSimilarityPercentageAllocatedOption){
+        $defaultMaxNoteSimilarityPercentageAllocated = $maxNoteSimilarityPercentageAllocatedOption;
+    }
+
+    if(!isset($minNoteSimilarityPercentageToAllow) || $minNoteSimilarityPercentageToAllow == false){
+        $minNoteSimilarityPercentageToAllow = $defaultMinNoteSimilarityPercentageToAllow;
+    }
 
     $getIDs = new GetIDs();
-
 
     ?>
     <div class="wrap">
         <?php
+        echo "<div id='currentScreen' style='display: none;'>searchsimilarodorpluginscreen</div>";
         echo "<div id='ids' style='display: none;'>".json_encode($getIDs->execute())."</div>";
         ?>
-        <div style="width: 100%">
-            <div style="display: block; float: left; margin: 4px;"><input id="searchButton" type="submit" name="SearchButton" value="Search"/></div>
-            <div id="timeElement" style="display: block; float: left;"></div>
+        <div style="width: 100%; text-align: center;">
+            <div style="display: block; float: left;">
+                <label style="display: block; float: left; padding-top: 5px; padding-left:6px; padding-right: 6px;" for="maxNoteSimilarityPercentageAllocatedInput">%, которые поделим на кол-во совпадений по нотам и получим % за одно свопадение:</label>
+                <input id="maxNoteSimilarityPercentageAllocatedInput" type="number" min="0" max="100" value="<?php echo $defaultMaxNoteSimilarityPercentageAllocated;?>">
+            </div>
+            <div style="display: block; float: left;">
+                <label style="display: block; float: left; padding-top: 5px; padding-left:6px; padding-right: 6px;" for="minNoteSimilarityPercentageToAllowInput">% по достижении которого запах считается похожим:</label>
+                <input id="minNoteSimilarityPercentageToAllowInput" type="number" min="0" max="100" value="<?php echo $minNoteSimilarityPercentageToAllow;?>">
+            </div>
+
+            <div style="display: block; float: left;">
+                <label style="display: block; float: left; padding-top: 5px; padding-left:6px; padding-right: 6px;" for="maxOdorsToLoadInput">maxOdorsToLoad (-1 = all odors):</label>
+                <input id="maxOdorsToLoadInput" type="number" min="-1" max="100000" value="<?php echo $maxOdorsToLoad;?>">
+            </div>
+
+            <div style="display: block; float: left; padding-left:6px; padding-right: 6px;">
+                <input id="savePluginSettingsButton" type="button" value="Сохранить настройки"/>
+            </div>
+
+            <div style="display: block; float: left; width: 100%; text-align: center; margin: 20px; font-weight: bold;">
+                <input id="searchButton" type="submit" name="SearchButton" value="Поиск похожих" style="font-size: 1.6em;  color: green; margin: 20px; padding: 25px 50px 25px;"/>
+            </div>
+            <div style="width: 100%; display:block; float:left; text-align: center;">
+                <div id="timeElement"></div>
+            </div>
+            
+            <div style="width: 100%; display:block; float:left; text-align: center;">
+                <div id="phaseElement"></div>
+            </div>
         </div>
-        <div id="logView" style="width: 100%; height: 400px; overflow-y: scroll; background-color: white; margin-top: 10px;"></div>
+        <div id="logView" style="width: 100%; height: 200px; overflow-y: scroll; background-color: white; margin-top: 10px;"></div>
+
+        <details>
+            <summary>О плагине</summary>
+            <ul>
+                <li>
+                    <div>В админке добавлено поле в общих настройках, в котором вписаны категории товаров через запятую (<b>ID категорий товаров</b>). У вас же все - пост, соответственно, товар ли это, определяется по родительской категории</div>
+                    <a href="https://wiki-aroma.com/wp-admin/options-general.php">https://wiki-aroma.com/wp-admin/options-general.php</a>
+                </li>
+                <li>
+                    <div>В каждом посте (товаре, в других нет) появилась область в админке 'Similar products', например</div>
+                    <a href="https://wiki-aroma.com/wp-admin/post.php?post=9171&action=edit">https://wiki-aroma.com/wp-admin/post.php?post=9171&action=edit</a>
+                </li>
+                <li>
+                    <div>В плагине 3 настройки, первые 2 для формулы, там словами описано для чего каждая. Первые 2 сохраняемые. 3я - служебная, осталась от отладки, она не сохраняется.Отвечает за кол-во обрабатываемых товаров.</div>
+                </li>
+                <li>
+                    <div>Работа плагина разделена на 3 этапа:</div>
+                    <ul>
+                        <li> - чтение из базы по-очереди товаров (медленно. браузер-сервер)</li>
+                        <li> - поиск похожих (быстро, в памяти компа это происходит. только браузер)</li>
+                        <li> - изменение информации в каждом из товаров, добавление похожих и сохранение (медленно. браузер-сервер)</li>
+                    </ul>
+                </li>
+            </ul>
+
+
+        </details>
+
     </div>
     <?php
 }
 
 function product_admin() {
+    /*
+    $productCategoriesOption = get_option("productCategories");
+    $productCategories = array_map('intval', explode(',', $productCategoriesOption));
+
+    if(!isset($_GET['post'])){
+        return;
+    }
+
+    $post_id = $_GET['post'];
+    $postCategories = get_the_category($post_id);
+
+    $catIDs = array();
+
+    foreach ( (array) $postCategories as $cat )
+    {
+        if ( empty($cat->slug ) )
+            continue;
+        array_push($catIDs, $cat->cat_ID);
+    }
+
+    $isProduct = false;
+
+    for($i=0; $i<sizeof($catIDs); $i++){
+        $postCategoryId = $catIDs[$i];
+        $equals = in_array(intval($postCategoryId), $productCategories);
+        if($equals == true || $equals == 1){
+            $isProduct = true;
+            break;
+        }
+    }
+    */
+    $isProduct = detectIsProduct();
+
+    if($isProduct == true || $isProduct == 1){
+        createMetaboxes();
+    }
+}
+
+function detectIsProduct(){
     $productCategoriesOption = get_option("productCategories");
     $productCategories = array_map('intval', explode(',', $productCategoriesOption));
 
@@ -157,9 +281,7 @@ function product_admin() {
         }
     }
 
-    if($isProduct == true || $isProduct == 1){
-        createMetaboxes();
-    }
+    return $isProduct;
 }
 
 function createMetaboxes(){
@@ -237,12 +359,13 @@ function displaySimilarProduct($postTitle, $postThumb, $postPermalink, $similarP
     echo "</div>";
 }
 
+
 function display_application_meta_box( $post ) {
     echo '<p>display_application_meta_box SIMILAR products</p>';
 }
 
 function serachforsimilarproducts_admin_menu() {
-    add_menu_page( 'Search for similar products', 'Search for similar products', 'manage_options', 'serachforsimilarproducts/serachforsimilarproducts-admin-page.php', 'serachforsimilarproducts_admin_page', 'dashicons-tickets', 6  );
+    add_menu_page( 'Search for similar products', 'Search for similar products', 'manage_options', 'serachforsimilarproducts/serachforsimilarproducts-admin-page.php', 'searchforsimilarproducts_admin_page', 'dashicons-tickets', 6  );
 }
 
 function add_option_field_to_general_admin_page(){
@@ -275,6 +398,30 @@ function productCategories_setting_callback_function( $val ){
     />
     <?php
 }
+
+function includeJS(){
+    //wp_enqueue_script( 'testData', plugin_dir_url( __FILE__ ) . '/js/testData.js');
+    wp_enqueue_script( 'keyMap', plugin_dir_url( __FILE__ ) . '/js/lib/collections/KeyMap.js');
+    wp_enqueue_script( 'list', plugin_dir_url( __FILE__ ) . '/js/lib/collections/List.js');
+    wp_enqueue_script( 'ListIterator', plugin_dir_url( __FILE__ ) . '/js/lib/collections/iterators/ListIterator.js');
+    wp_enqueue_script( 'KeyMapIterator', plugin_dir_url( __FILE__ ) . '/js/lib/collections/iterators/KeyMapIterator.js');
+    wp_enqueue_script( 'MapJsonEncoder', plugin_dir_url( __FILE__ ) . '/js/lib/collections/json/MapJsonEncoder.js');
+    wp_enqueue_script( 'MapJsonDecoder', plugin_dir_url( __FILE__ ) . '/js/lib/collections/json/MapJsonDecoder.js');
+    wp_enqueue_script( 'eventBus', plugin_dir_url( __FILE__ ) . '/js/lib/events/EventBus.js');
+
+    wp_enqueue_script( 'Odor', plugin_dir_url( __FILE__ ) . '/js/Odor.js');
+    wp_enqueue_script( 'OdorsParser', plugin_dir_url( __FILE__ ) . '/js/OdorsParser.js');
+    wp_enqueue_script( 'GetOdorsRequest', plugin_dir_url( __FILE__ ) . '/js/ajax/GetOdorsRequest.js');
+    wp_enqueue_script( 'UpdateOdorSimilarityRequest', plugin_dir_url( __FILE__ ) . '/js/ajax/UpdateOdorSimilarityRequest.js');
+    wp_enqueue_script( 'similarFinder', plugin_dir_url( __FILE__ ) . '/js/SimilarFinder.js');
+    wp_enqueue_script( 'similarFinderApp', plugin_dir_url( __FILE__ ) . '/js/SimilarFinderApp.js');
+    wp_enqueue_script( 'findSimilar', plugin_dir_url( __FILE__ ) . '/js/findSimilar.js', array ( 'jquery' ), null, true);
+}
+
+function includeCss(){
+    wp_enqueue_style("overrideCss", plugin_dir_url( __FILE__ ) . '/style.css', array(), null, true);
+}
+
 
 add_action('admin_menu', 'add_option_field_to_general_admin_page');
 add_action( 'admin_menu', 'serachforsimilarproducts_admin_menu' );

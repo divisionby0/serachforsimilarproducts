@@ -1,26 +1,26 @@
-/// <reference path="../Map.ts"/>
+///<reference path="../KeyMap.ts"/>
 class MapJsonDecoder{
-    private rootMap:Map<any>;
+    private rootMap:KeyMap<any>;
     private dataString:string;
 
 
     constructor(dataString:string) {
-        this.rootMap = new Map<any>('rootMap');
+        this.rootMap = new KeyMap<any>('rootMap');
         this.dataString = dataString;
     }
 
-    public decode():Map<any>{
+    public decode():KeyMap<any>{
         this.parseStringToMap(this.dataString, this.rootMap);
         return this.rootMap;
     }
 
 
-    private parseStringToMap(dataString:string, parentMap:Map<any>):void{
+    private parseStringToMap(dataString:string, parentMap:KeyMap<any>):void{
         var dataJson:any = JSON.parse(dataString);
         this.parseObjectToMap(dataJson, parentMap);
     }
 
-    private parseObjectToMap(dataObject:any, parentMap:Map<any>):Map<any>{
+    private parseObjectToMap(dataObject:any, parentMap:KeyMap<any>):KeyMap<any>{
 
         var id:string = dataObject["id"];
         var type:string = dataObject["type"];
@@ -34,7 +34,7 @@ class MapJsonDecoder{
                 var valueType:string = value["type"];
 
                 if(key!="id" && key!="type" && valueType=="Map"){
-                    var subMap:Map<any> = new Map<any>(valueId);
+                    var subMap:KeyMap<any> = new KeyMap<any>(valueId);
                     parentMap.add(key, this.parseObjectToMap(value, subMap));
                 }
                 else{

@@ -1,4 +1,3 @@
-/// <reference path="iterators/MapIterator.ts"/>
 /// <reference path="json/MapJsonEncoder.ts"/>
 ///<reference path="iterators/KeyMapIterator.ts"/>
 var KeyMap = (function () {

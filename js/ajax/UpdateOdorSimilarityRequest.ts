@@ -7,6 +7,8 @@ class UpdateOdorSimilarityRequest{
     private odorId:string;
     private similarOdorIDs:string[];
 
+    private startTime:Date;
+
     constructor(j$:any, odorId:string, similarOdorIDs:string[]){
         this.j$ = j$;
         this.odorId = odorId;
@@ -14,13 +16,12 @@ class UpdateOdorSimilarityRequest{
     }
 
     public execute():void{
+        this.startTime = new Date();
         var data:any = {
             'action': 'update_similarity',
             'odorId': this.odorId,
             'similarOdors': JSON.stringify(this.similarOdorIDs)
         };
-
-        console.log("data=",data);
         
         this.j$.ajax({
             type: "POST",
@@ -33,20 +34,13 @@ class UpdateOdorSimilarityRequest{
     }
 
     private onResponse(response:any):void{
-        console.log("Update similar response:",response);
-        if(response){
-            
 
-            if(response.result == "1"){
-                EventBus.dispatchEvent("UPDATE_ODOR_SIMILARITY_COMPLETE","");
-            }
-            else if(response.error){
-                EventBus.dispatchEvent("UPDATE_ODOR_SIMILARITY_ERROR",response.error);
-            }
-        }
-        else{
-            EventBus.dispatchEvent("UPDATE_ODOR_SIMILARITY_ERROR","response is empty");
-        }
+        var finishTime:Date = new Date();
+        var dif:number = this.startTime.getTime() - finishTime.getTime();
+        var Seconds_from_T1_to_T2:number = dif / 1000;
+        var Seconds_Between_Dates:number = Math.abs(Seconds_from_T1_to_T2);
+        
+        EventBus.dispatchEvent("UPDATE_ODOR_SIMILARITY_COMPLETE",Seconds_Between_Dates);
     }
 
     private onFail(xhr:any, status:any, error:any):void {
