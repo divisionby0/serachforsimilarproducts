@@ -37,7 +37,7 @@ class SimilarFinderApp{
     private currentPhaseIndex:number = -1;
     private currentPhase:string;
 
-    private maxSimilarOdors:number = 10;
+    private maxSimilarOdors:number = 9;
 
     constructor(j$:any){
         this.j$ = j$;
@@ -53,36 +53,28 @@ class SimilarFinderApp{
         this.createButtonListener();
         this.createMaxOdorsToLoadInputListener();
 
-        /* testing data */
-        /*
-        this.odors = new KeyMap<Odor>("odors");
-        var testOdorsJson:any = JSON.parse(testData);
+        this.loadDataFile();
 
-        for (const property in testOdorsJson) {
-            var id:string = property;
-            var odorData:any = testOdorsJson[property];
-
-            if(typeof odorData != "string"){
-                var name:string = odorData.name;
-                var types:string[] = odorData.types;
-                var notes:string[] = odorData.notes;
-
-                var odor:Odor = new Odor(id, name, types, notes);
-                this.odors.add(id, odor);
-            }
-        }
-        console.log("test odors:",this.odors);
-        var similarFinder:SimilarFinder = new SimilarFinder(this.odors);
-        similarFinder.find();
-        */
-        
         this.getIDs();
 
         if(this.maxOdorsToLoad == -1){
             this.maxOdorsToLoad = this.ids.length;
         }
-
         console.log("max odors to load "+this.maxOdorsToLoad);
+    }
+
+    private loadDataFile():void{
+        var pluginUrl:string = this.j$("#pluginUrlElement").text();
+
+        if(pluginUrl && pluginUrl!=""){
+            this.j$.get(pluginUrl+'data/odorsToUpdateJSON_1.txt', (data)=>this.onDataFileLoaded(data));
+        }
+    }
+
+    private onDataFileLoaded(fileContent:string):void{
+        //console.log("onDataFileLoaded data=",fileContent);
+        var json:any = JSON.parse(fileContent);
+        console.log("parsed data:",fileContent);
     }
 
     private createMaxOdorsToLoadInputListener():void{
@@ -100,7 +92,11 @@ class SimilarFinderApp{
     private onOdorsLoaded(data:any[]):void{
         var odorsParser:OdorsParser = new OdorsParser(data);
         this.odors = odorsParser.parse();
-        
+
+        var jsonEncoder:MapJsonEncoder = this.odors.getEncoder();
+        var json:string = jsonEncoder.encode();
+
+        console.log("Loaded odors:",json);
         var logElement:any = this.buildLogElement({logText:"Total odors: "+this.odors.size()});
         this.addLogElement(logElement);
 

@@ -64,7 +64,9 @@ class SimilarFinder{
                 if(currentOdor.getId()!=possibleSimilarOdorId){
 
                     var possibleSimilarOdorNotes:string[] = possibleSimilarOdor.getNotes();
+                    
                     var percent:number = this.findNotesSimilarityPercentage(possibleSimilarOdorNotes, currentOdor.getNotes(), singleNoteSimilarityPercent);
+                    
                     if(!isNaN(percent) && percent!=0 && percent>=this.minNoteSimilarityPercentageToAllow){
 
                         // добавляем похожий к эталонному

@@ -203,46 +203,15 @@ function searchforsimilarproducts_admin_page(){
                     </ul>
                 </li>
             </ul>
-
-
         </details>
-
     </div>
     <?php
 }
 
 function product_admin() {
-    /*
-    $productCategoriesOption = get_option("productCategories");
-    $productCategories = array_map('intval', explode(',', $productCategoriesOption));
+    $pluginUrl = plugin_dir_url(__FILE__);
 
-    if(!isset($_GET['post'])){
-        return;
-    }
-
-    $post_id = $_GET['post'];
-    $postCategories = get_the_category($post_id);
-
-    $catIDs = array();
-
-    foreach ( (array) $postCategories as $cat )
-    {
-        if ( empty($cat->slug ) )
-            continue;
-        array_push($catIDs, $cat->cat_ID);
-    }
-
-    $isProduct = false;
-
-    for($i=0; $i<sizeof($catIDs); $i++){
-        $postCategoryId = $catIDs[$i];
-        $equals = in_array(intval($postCategoryId), $productCategories);
-        if($equals == true || $equals == 1){
-            $isProduct = true;
-            break;
-        }
-    }
-    */
+    echo "<div id='pluginUrlElement' style='display: none;'>".$pluginUrl."</div>";
     $isProduct = detectIsProduct();
 
     if($isProduct == true || $isProduct == 1){
@@ -255,7 +224,7 @@ function detectIsProduct(){
     $productCategories = array_map('intval', explode(',', $productCategoriesOption));
 
     if(!isset($_GET['post'])){
-        return;
+        return false;
     }
 
     $post_id = $_GET['post'];

@@ -13,7 +13,7 @@ var SimilarFinderApp = (function () {
         this.counter = 0;
         this.phases = new Array("Чтение из базы", "Поиск похожих", "Запись в базу");
         this.currentPhaseIndex = -1;
-        this.maxSimilarOdors = 10;
+        this.maxSimilarOdors = 9;
         this.j$ = j$;
         console.log("SimilarFinderApp " + this.ver);
         this.maxNoteSimilarityPercentageAllocated = this.j$("#maxNoteSimilarityPercentageAllocatedInput").val();
@@ -23,34 +23,25 @@ var SimilarFinderApp = (function () {
         this.createListeners();
         this.createButtonListener();
         this.createMaxOdorsToLoadInputListener();
-        /* testing data */
-        /*
-        this.odors = new KeyMap<Odor>("odors");
-        var testOdorsJson:any = JSON.parse(testData);
-
-        for (const property in testOdorsJson) {
-            var id:string = property;
-            var odorData:any = testOdorsJson[property];
-
-            if(typeof odorData != "string"){
-                var name:string = odorData.name;
-                var types:string[] = odorData.types;
-                var notes:string[] = odorData.notes;
-
-                var odor:Odor = new Odor(id, name, types, notes);
-                this.odors.add(id, odor);
-            }
-        }
-        console.log("test odors:",this.odors);
-        var similarFinder:SimilarFinder = new SimilarFinder(this.odors);
-        similarFinder.find();
-        */
+        this.loadDataFile();
         this.getIDs();
         if (this.maxOdorsToLoad == -1) {
             this.maxOdorsToLoad = this.ids.length;
         }
         console.log("max odors to load " + this.maxOdorsToLoad);
     }
+    SimilarFinderApp.prototype.loadDataFile = function () {
+        var _this = this;
+        var pluginUrl = this.j$("#pluginUrlElement").text();
+        if (pluginUrl && pluginUrl != "") {
+            this.j$.get(pluginUrl + 'data/odorsToUpdateJSON_1.txt', function (data) { return _this.onDataFileLoaded(data); });
+        }
+    };
+    SimilarFinderApp.prototype.onDataFileLoaded = function (fileContent) {
+        //console.log("onDataFileLoaded data=",fileContent);
+        var json = JSON.parse(fileContent);
+        console.log("parsed data:", fileContent);
+    };
     SimilarFinderApp.prototype.createMaxOdorsToLoadInputListener = function () {
         var _this = this;
         this.j$("#maxOdorsToLoadInput").change(function (event) { return _this.onMaxOdorsToLoadInputChanged(event); });
@@ -64,6 +55,9 @@ var SimilarFinderApp = (function () {
     SimilarFinderApp.prototype.onOdorsLoaded = function (data) {
         var odorsParser = new OdorsParser(data);
         this.odors = odorsParser.parse();
+        var jsonEncoder = this.odors.getEncoder();
+        var json = jsonEncoder.encode();
+        console.log("Loaded odors:", json);
         var logElement = this.buildLogElement({ logText: "Total odors: " + this.odors.size() });
         this.addLogElement(logElement);
         this.currentPhaseIndex = 1;
