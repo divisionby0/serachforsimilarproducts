@@ -2,16 +2,16 @@
 ///<reference path="OdorsParser.ts"/>
 ///<reference path="Odor.ts"/>
 ///<reference path="lib/collections/KeyMap.ts"/>
-///<reference path="SimilarFinder.ts"/>
 ///<reference path="ajax/GetOdorsRequest.ts"/>
 ///<reference path="ajax/UpdateOdorSimilarityRequest.ts"/>
 ///<reference path="lib/collections/json/MapJsonDecoder.ts"/>
+///<reference path="IteratingOdorsFinder.ts"/>
 declare var testData:string;
 class SimilarFinderApp{
 
     private j$:any;
 
-    private ver:string = "0.0.4";
+    private ver:string = "0.0.5";
 
     private startButton:any;
 
@@ -52,29 +52,16 @@ class SimilarFinderApp{
         this.createListeners();
         this.createButtonListener();
         this.createMaxOdorsToLoadInputListener();
-
-        this.loadDataFile();
-
+        
         this.getIDs();
 
         if(this.maxOdorsToLoad == -1){
             this.maxOdorsToLoad = this.ids.length;
         }
         console.log("max odors to load "+this.maxOdorsToLoad);
-    }
 
-    private loadDataFile():void{
-        var pluginUrl:string = this.j$("#pluginUrlElement").text();
-
-        if(pluginUrl && pluginUrl!=""){
-            this.j$.get(pluginUrl+'data/odorsToUpdateJSON_1.txt', (data)=>this.onDataFileLoaded(data));
-        }
-    }
-
-    private onDataFileLoaded(fileContent:string):void{
-        //console.log("onDataFileLoaded data=",fileContent);
-        var json:any = JSON.parse(fileContent);
-        console.log("parsed data:",fileContent);
+       // var iteratingFinder:IteratingOdorsFinder = new IteratingOdorsFinder();
+       // iteratingFinder.start();
     }
 
     private createMaxOdorsToLoadInputListener():void{
@@ -90,34 +77,44 @@ class SimilarFinderApp{
     }
 
     private onOdorsLoaded(data:any[]):void{
+        //console.log("odors loaded data=",data);
+
         var odorsParser:OdorsParser = new OdorsParser(data);
         this.odors = odorsParser.parse();
 
-        var jsonEncoder:MapJsonEncoder = this.odors.getEncoder();
-        var json:string = jsonEncoder.encode();
+        //console.log("this.odors=",odorsParser.parse());
 
-        console.log("Loaded odors:",json);
         var logElement:any = this.buildLogElement({logText:"Total odors: "+this.odors.size()});
         this.addLogElement(logElement);
 
         this.currentPhaseIndex = 1;
         this.changePhase();
 
-        var similarFinder:SimilarFinder = new SimilarFinder(this.odors, this.maxNoteSimilarityPercentageAllocated, this.minNoteSimilarityPercentageToAllow);
-        similarFinder.find();
-        console.log("Search similar complete. Updated collection ",this.odors);
+        var rawCollection:Odor[] = new Array();
 
-        this.currentPhaseIndex = 2;
-        this.changePhase();
+        var iterator:KeyMapIterator = this.odors.getIterator();
+        while(iterator.hasNext()){
+            var currentOdor:Odor = iterator.next();
+            rawCollection.push(currentOdor);
+        }
+
+        var finder:IteratingOdorsFinder = new IteratingOdorsFinder(rawCollection);
+        finder.start();
 
         this.odorsToUpdate = new KeyMap<Odor>("odorsToUpdate");
-        var odorsIterator:KeyMapIterator = this.odors.getIterator();
-        while(odorsIterator.hasNext()){
-            var currentOdor:Odor = odorsIterator.next();
+        var i:number;
+        for(i=0; i<rawCollection.length; i++){
+            var currentOdor:Odor = rawCollection[i];
+
             if(currentOdor.hasSimilarOdors()){
                 this.odorsToUpdate.add(currentOdor.getId(), currentOdor);
             }
         }
+
+        console.log("Search similar complete. Updated collection ",this.odors);
+
+        this.currentPhaseIndex = 2;
+        this.changePhase();
 
         console.log("odors to update ",this.odorsToUpdate);
 
@@ -135,42 +132,59 @@ class SimilarFinderApp{
     }
 
     private updateNextOdor():void{
-        this.odorIdCollection = this.odorsToUpdate.getKeys();
-        this.currentOdorId = this.odorIdCollection[this.counter];
 
-        var currentOdor:Odor = this.odorsToUpdate.get(this.currentOdorId);
-
-        if(currentOdor.hasSimilarOdors()){
-            var similars:any[] = new Array();
-            var similarIterator:KeyMapIterator = currentOdor.getSimilarOdorsIterator();
-
-            while(similarIterator.hasNext()){
-                var similar:any = similarIterator.next();
-                similars.push({id:similar.id, perc:similar.percentageOfSimilarity});
-            }
-
-            similars.sort(function(a, b){return parseInt(b.perc) - parseInt(a.perc)});
-
-            if(similars.length > this.maxSimilarOdors){
-                similars = similars.slice(0, this.maxSimilarOdors);
-            }
-
-            var logElement:any = this.buildLogElement({logText:"update odor "+this.counter+" / "+this.totalOdorsToUpdate});
-            this.addLogElement(logElement);
-
-
-
-            var request:UpdateOdorSimilarityRequest = new UpdateOdorSimilarityRequest(this.j$, currentOdor.getId(), similars);
-            request.execute();
+        if(this.odorsToUpdate.size() == 0){
+            console.log("nothing to update");
+            this.onComplete();
         }
         else{
-            this.counter++;
-            if(this.counter < this.totalOdorsToUpdate){
-                this.updateNextOdor();
+            this.odorIdCollection = this.odorsToUpdate.getKeys();
+            this.currentOdorId = this.odorIdCollection[this.counter];
+
+            var currentOdor:Odor = this.odorsToUpdate.get(this.currentOdorId);
+
+            if(currentOdor.hasSimilarOdors()){
+                var similars:any[] = new Array();
+
+                var currentOdorSimilarOdors:any[] = currentOdor.getSimilarOdors();
+                var i:number;
+                for(i = 0; i < currentOdorSimilarOdors.length; i++){
+                    var similar:any = currentOdorSimilarOdors[i];
+                    similars.push({id:similar.id, perc:similar.percentageOfSimilarity});
+                }
+
+                similars.sort(function(a, b){return parseInt(b.perc) - parseInt(a.perc)});
+
+                /*
+                 var similarIterator:KeyMapIterator = currentOdor.getSimilarOdorsIterator();
+
+                 while(similarIterator.hasNext()){
+                 var similar:any = similarIterator.next();
+                 similars.push({id:similar.id, perc:similar.percentageOfSimilarity});
+                 }
+
+                 similars.sort(function(a, b){return parseInt(b.perc) - parseInt(a.perc)});
+
+                 if(similars.length > this.maxSimilarOdors){
+                 similars = similars.slice(0, this.maxSimilarOdors);
+                 }
+                 */
+
+                var logElement:any = this.buildLogElement({logText:"update odor "+this.counter+" / "+this.totalOdorsToUpdate});
+                this.addLogElement(logElement);
+
+                var request:UpdateOdorSimilarityRequest = new UpdateOdorSimilarityRequest(this.j$, currentOdor.getId(), similars);
+                request.execute();
             }
             else{
-                console.log("update complete");
-                this.onComplete();
+                this.counter++;
+                if(this.counter < this.totalOdorsToUpdate){
+                    this.updateNextOdor();
+                }
+                else{
+                    console.log("update complete");
+                    this.onComplete();
+                }
             }
         }
     }
@@ -268,7 +282,6 @@ class SimilarFinderApp{
     private onComplete():void{
         this.state = SimilarFinderApp.IDLE;
         this.onStateChanged();
-        console.log("Odors to update:",this.odorsToUpdate);
         alert("Complete");
     }
 

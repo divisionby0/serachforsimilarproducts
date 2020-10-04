@@ -8,21 +8,20 @@ class OdorsParser{
     }
     
     public parse():KeyMap<Odor>{
-        var collection:KeyMap<any> = new KeyMap<any>("odors");
+        var collection:KeyMap<Odor> = new KeyMap<Odor>("odors");
 
         var i:number;
         for(i=0; i<this.data.length; i++){
             var odorData:any = this.data[i];
             var id:string = odorData.id;
             var name:string = odorData.title;
-
-            odorData.types.sort();
-            odorData.notes.sort();
             
-            collection.add(id, new Odor(id, name, odorData.types, odorData.notes));
+            odorData.notes.sort();
+
+            var newOdor:Odor = new Odor(id, name, odorData.notes);
+            collection.add(id, newOdor);
         }
 
         return collection;
-
     }
 }

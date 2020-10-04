@@ -11,9 +11,9 @@ var OdorsParser = (function () {
             var odorData = this.data[i];
             var id = odorData.id;
             var name = odorData.title;
-            odorData.types.sort();
             odorData.notes.sort();
-            collection.add(id, new Odor(id, name, odorData.types, odorData.notes));
+            var newOdor = new Odor(id, name, odorData.notes);
+            collection.add(id, newOdor);
         }
         return collection;
     };

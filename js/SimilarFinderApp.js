@@ -2,13 +2,13 @@
 ///<reference path="OdorsParser.ts"/>
 ///<reference path="Odor.ts"/>
 ///<reference path="lib/collections/KeyMap.ts"/>
-///<reference path="SimilarFinder.ts"/>
 ///<reference path="ajax/GetOdorsRequest.ts"/>
 ///<reference path="ajax/UpdateOdorSimilarityRequest.ts"/>
 ///<reference path="lib/collections/json/MapJsonDecoder.ts"/>
+///<reference path="IteratingOdorsFinder.ts"/>
 var SimilarFinderApp = (function () {
     function SimilarFinderApp(j$) {
-        this.ver = "0.0.4";
+        this.ver = "0.0.5";
         this.maxOdorsToLoad = 30;
         this.counter = 0;
         this.phases = new Array("Чтение из базы", "Поиск похожих", "Запись в базу");
@@ -23,25 +23,14 @@ var SimilarFinderApp = (function () {
         this.createListeners();
         this.createButtonListener();
         this.createMaxOdorsToLoadInputListener();
-        this.loadDataFile();
         this.getIDs();
         if (this.maxOdorsToLoad == -1) {
             this.maxOdorsToLoad = this.ids.length;
         }
         console.log("max odors to load " + this.maxOdorsToLoad);
+        // var iteratingFinder:IteratingOdorsFinder = new IteratingOdorsFinder();
+        // iteratingFinder.start();
     }
-    SimilarFinderApp.prototype.loadDataFile = function () {
-        var _this = this;
-        var pluginUrl = this.j$("#pluginUrlElement").text();
-        if (pluginUrl && pluginUrl != "") {
-            this.j$.get(pluginUrl + 'data/odorsToUpdateJSON_1.txt', function (data) { return _this.onDataFileLoaded(data); });
-        }
-    };
-    SimilarFinderApp.prototype.onDataFileLoaded = function (fileContent) {
-        //console.log("onDataFileLoaded data=",fileContent);
-        var json = JSON.parse(fileContent);
-        console.log("parsed data:", fileContent);
-    };
     SimilarFinderApp.prototype.createMaxOdorsToLoadInputListener = function () {
         var _this = this;
         this.j$("#maxOdorsToLoadInput").change(function (event) { return _this.onMaxOdorsToLoadInputChanged(event); });
@@ -53,28 +42,33 @@ var SimilarFinderApp = (function () {
         }
     };
     SimilarFinderApp.prototype.onOdorsLoaded = function (data) {
+        //console.log("odors loaded data=",data);
         var odorsParser = new OdorsParser(data);
         this.odors = odorsParser.parse();
-        var jsonEncoder = this.odors.getEncoder();
-        var json = jsonEncoder.encode();
-        console.log("Loaded odors:", json);
+        //console.log("this.odors=",odorsParser.parse());
         var logElement = this.buildLogElement({ logText: "Total odors: " + this.odors.size() });
         this.addLogElement(logElement);
         this.currentPhaseIndex = 1;
         this.changePhase();
-        var similarFinder = new SimilarFinder(this.odors, this.maxNoteSimilarityPercentageAllocated, this.minNoteSimilarityPercentageToAllow);
-        similarFinder.find();
-        console.log("Search similar complete. Updated collection ", this.odors);
-        this.currentPhaseIndex = 2;
-        this.changePhase();
+        var rawCollection = new Array();
+        var iterator = this.odors.getIterator();
+        while (iterator.hasNext()) {
+            var currentOdor = iterator.next();
+            rawCollection.push(currentOdor);
+        }
+        var finder = new IteratingOdorsFinder(rawCollection);
+        finder.start();
         this.odorsToUpdate = new KeyMap("odorsToUpdate");
-        var odorsIterator = this.odors.getIterator();
-        while (odorsIterator.hasNext()) {
-            var currentOdor = odorsIterator.next();
+        var i;
+        for (i = 0; i < rawCollection.length; i++) {
+            var currentOdor = rawCollection[i];
             if (currentOdor.hasSimilarOdors()) {
                 this.odorsToUpdate.add(currentOdor.getId(), currentOdor);
             }
         }
+        console.log("Search similar complete. Updated collection ", this.odors);
+        this.currentPhaseIndex = 2;
+        this.changePhase();
         console.log("odors to update ", this.odorsToUpdate);
         this.totalOdorsToUpdate = this.odorsToUpdate.size();
         this.updateSimilarityDBRecords();
@@ -86,33 +80,51 @@ var SimilarFinderApp = (function () {
         this.updateNextOdor();
     };
     SimilarFinderApp.prototype.updateNextOdor = function () {
-        this.odorIdCollection = this.odorsToUpdate.getKeys();
-        this.currentOdorId = this.odorIdCollection[this.counter];
-        var currentOdor = this.odorsToUpdate.get(this.currentOdorId);
-        if (currentOdor.hasSimilarOdors()) {
-            var similars = new Array();
-            var similarIterator = currentOdor.getSimilarOdorsIterator();
-            while (similarIterator.hasNext()) {
-                var similar = similarIterator.next();
-                similars.push({ id: similar.id, perc: similar.percentageOfSimilarity });
-            }
-            similars.sort(function (a, b) { return parseInt(b.perc) - parseInt(a.perc); });
-            if (similars.length > this.maxSimilarOdors) {
-                similars = similars.slice(0, this.maxSimilarOdors);
-            }
-            var logElement = this.buildLogElement({ logText: "update odor " + this.counter + " / " + this.totalOdorsToUpdate });
-            this.addLogElement(logElement);
-            var request = new UpdateOdorSimilarityRequest(this.j$, currentOdor.getId(), similars);
-            request.execute();
+        if (this.odorsToUpdate.size() == 0) {
+            console.log("nothing to update");
+            this.onComplete();
         }
         else {
-            this.counter++;
-            if (this.counter < this.totalOdorsToUpdate) {
-                this.updateNextOdor();
+            this.odorIdCollection = this.odorsToUpdate.getKeys();
+            this.currentOdorId = this.odorIdCollection[this.counter];
+            var currentOdor = this.odorsToUpdate.get(this.currentOdorId);
+            if (currentOdor.hasSimilarOdors()) {
+                var similars = new Array();
+                var currentOdorSimilarOdors = currentOdor.getSimilarOdors();
+                var i;
+                for (i = 0; i < currentOdorSimilarOdors.length; i++) {
+                    var similar = currentOdorSimilarOdors[i];
+                    similars.push({ id: similar.id, perc: similar.percentageOfSimilarity });
+                }
+                similars.sort(function (a, b) { return parseInt(b.perc) - parseInt(a.perc); });
+                /*
+                 var similarIterator:KeyMapIterator = currentOdor.getSimilarOdorsIterator();
+
+                 while(similarIterator.hasNext()){
+                 var similar:any = similarIterator.next();
+                 similars.push({id:similar.id, perc:similar.percentageOfSimilarity});
+                 }
+
+                 similars.sort(function(a, b){return parseInt(b.perc) - parseInt(a.perc)});
+
+                 if(similars.length > this.maxSimilarOdors){
+                 similars = similars.slice(0, this.maxSimilarOdors);
+                 }
+                 */
+                var logElement = this.buildLogElement({ logText: "update odor " + this.counter + " / " + this.totalOdorsToUpdate });
+                this.addLogElement(logElement);
+                var request = new UpdateOdorSimilarityRequest(this.j$, currentOdor.getId(), similars);
+                request.execute();
             }
             else {
-                console.log("update complete");
-                this.onComplete();
+                this.counter++;
+                if (this.counter < this.totalOdorsToUpdate) {
+                    this.updateNextOdor();
+                }
+                else {
+                    console.log("update complete");
+                    this.onComplete();
+                }
             }
         }
     };
@@ -195,7 +207,6 @@ var SimilarFinderApp = (function () {
     SimilarFinderApp.prototype.onComplete = function () {
         this.state = SimilarFinderApp.IDLE;
         this.onStateChanged();
-        console.log("Odors to update:", this.odorsToUpdate);
         alert("Complete");
     };
     SimilarFinderApp.prototype.onParseOdorOperationDurationData = function (data) {

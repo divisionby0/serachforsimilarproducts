@@ -18,26 +18,6 @@ includeCss();
 
 
 $catIDs;
-/*
-if(isset($_POST['SearchButton'])){
-    $similarOdorsFinder = new SimilarOdorsFinder();
-    $similarOdorsFinder->start();
-}
-*/
-
-function similarsearchshortcode_function(){
-    $isProduct = detectIsProduct();
-
-    echo "<p>is product:".$isProduct."</p>";
-
-    /*
-    if($isProduct == true || $isProduct == 1){
-        createMetaboxes();
-    }
-    */
-}
-add_shortcode('similarsearchshortcode', 'similarsearchshortcode_function');
-
 
 // AJAX
 add_action( 'wp_ajax_get_odor', 'get_odor_callback' );
@@ -45,8 +25,7 @@ function get_odor_callback(){
     $id = $_POST["id"];
     
     $title = get_the_title($id);
-    
-    $typeCollection = get_post_meta($id, "tip_aromata")[0];
+
     $startNotes = get_post_meta($id, "nachalnaja_nota")[0];
     $heartNotes = get_post_meta($id, "nota_serdca")[0];
     $finalNotes = get_post_meta($id, "konechnaja_nota")[0];
@@ -65,7 +44,6 @@ function get_odor_callback(){
     $data = new stdClass();
     $data->id = $id;
     $data->title = $title;
-    $data->types = $typeCollection;
     $data->notes = $notes;
 
     echo json_encode($data);
@@ -149,11 +127,11 @@ function searchforsimilarproducts_admin_page(){
         echo "<div id='ids' style='display: none;'>".json_encode($getIDs->execute())."</div>";
         ?>
         <div style="width: 100%; text-align: center;">
-            <div style="display: block; float: left;">
+            <div style="float: left; display: none;">
                 <label style="display: block; float: left; padding-top: 5px; padding-left:6px; padding-right: 6px;" for="maxNoteSimilarityPercentageAllocatedInput">%, которые поделим на кол-во совпадений по нотам и получим % за одно свопадение:</label>
                 <input id="maxNoteSimilarityPercentageAllocatedInput" type="number" min="0" max="100" value="<?php echo $defaultMaxNoteSimilarityPercentageAllocated;?>">
             </div>
-            <div style="display: block; float: left;">
+            <div style="display: none; float: left;">
                 <label style="display: block; float: left; padding-top: 5px; padding-left:6px; padding-right: 6px;" for="minNoteSimilarityPercentageToAllowInput">% по достижении которого запах считается похожим:</label>
                 <input id="minNoteSimilarityPercentageToAllowInput" type="number" min="0" max="100" value="<?php echo $minNoteSimilarityPercentageToAllow;?>">
             </div>
@@ -163,12 +141,12 @@ function searchforsimilarproducts_admin_page(){
                 <input id="maxOdorsToLoadInput" type="number" min="-1" max="100000" value="<?php echo $maxOdorsToLoad;?>">
             </div>
 
-            <div style="display: block; float: left; padding-left:6px; padding-right: 6px;">
+            <div style="display: none; float: left; padding-left:6px; padding-right: 6px;">
                 <input id="savePluginSettingsButton" type="button" value="Сохранить настройки"/>
             </div>
 
-            <div style="display: block; float: left; width: 100%; text-align: center; margin: 20px; font-weight: bold;">
-                <input id="searchButton" type="submit" name="SearchButton" value="Поиск похожих" style="font-size: 1.6em;  color: green; margin: 20px; padding: 25px 50px 25px;"/>
+            <div style="display: block; float: left; text-align: center;">
+                <input id="searchButton" type="submit" name="SearchButton" value="Поиск похожих" style="margin-top: 2px;"/>
             </div>
             <div style="width: 100%; display:block; float:left; text-align: center;">
                 <div id="timeElement"></div>
@@ -192,9 +170,6 @@ function searchforsimilarproducts_admin_page(){
                     <a href="https://wiki-aroma.com/wp-admin/post.php?post=9171&action=edit">https://wiki-aroma.com/wp-admin/post.php?post=9171&action=edit</a>
                 </li>
                 <li>
-                    <div>В плагине 3 настройки, первые 2 для формулы, там словами описано для чего каждая. Первые 2 сохраняемые. 3я - служебная, осталась от отладки, она не сохраняется.Отвечает за кол-во обрабатываемых товаров.</div>
-                </li>
-                <li>
                     <div>Работа плагина разделена на 3 этапа:</div>
                     <ul>
                         <li> - чтение из базы по-очереди товаров (медленно. браузер-сервер)</li>
@@ -211,7 +186,7 @@ function searchforsimilarproducts_admin_page(){
 function product_admin() {
     $pluginUrl = plugin_dir_url(__FILE__);
 
-    echo "<div id='pluginUrlElement' style='display: none;'>".$pluginUrl."</div>";
+    //echo "<div id='pluginUrlElement' style='display: none;'>".$pluginUrl."</div>";
     $isProduct = detectIsProduct();
 
     if($isProduct == true || $isProduct == 1){
@@ -382,8 +357,8 @@ function includeJS(){
     wp_enqueue_script( 'OdorsParser', plugin_dir_url( __FILE__ ) . '/js/OdorsParser.js');
     wp_enqueue_script( 'GetOdorsRequest', plugin_dir_url( __FILE__ ) . '/js/ajax/GetOdorsRequest.js');
     wp_enqueue_script( 'UpdateOdorSimilarityRequest', plugin_dir_url( __FILE__ ) . '/js/ajax/UpdateOdorSimilarityRequest.js');
-    wp_enqueue_script( 'similarFinder', plugin_dir_url( __FILE__ ) . '/js/SimilarFinder.js');
     wp_enqueue_script( 'similarFinderApp', plugin_dir_url( __FILE__ ) . '/js/SimilarFinderApp.js');
+    wp_enqueue_script( 'iteratingOdorsFinder', plugin_dir_url( __FILE__ ) . '/js/IteratingOdorsFinder.js');
     wp_enqueue_script( 'findSimilar', plugin_dir_url( __FILE__ ) . '/js/findSimilar.js', array ( 'jquery' ), null, true);
 }
 

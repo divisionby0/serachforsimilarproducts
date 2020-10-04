@@ -4,16 +4,17 @@ class Odor{
     
     private id:string;
     private name:string;
-    private types:string[];
     private notes:string[];
-    private similarOdors:KeyMap<any>;
+    private similarOdors:any[];
+    private maxSimilarOdorsToAdd:number = 9;
+    private currentMaxPercentage:number = 0;
+    private currentMaxPercentageId:string = "-1";
 
-    constructor(id:string, name:string, types:string[], notes:string[]){
+    constructor(id:string, name:string, notes:string[]){
         this.id = id;
         this.name = name;
-        this.types = types;
         this.notes = notes;
-        this.similarOdors = new KeyMap<any>("similarOdors");
+        this.similarOdors = new Array();
     }
 
     public getId():string{
@@ -22,38 +23,25 @@ class Odor{
     public getName():string{
         return this.name;
     }
-    public getTypes():string[]{
-        return this.types;
-    }
-    public getNotes():string[]{
+    public getNotes():string[] {
         return this.notes;
     }
     
-    public removeSimilarOdor(id:string):void{
-        if(this.similarOdors.has(id)){
-            this.similarOdors.remove(id);
+    public addSimilarOdor(id:string, percentageOfSimilarity:number):void{
+        this.similarOdors.push({id:id, perc:percentageOfSimilarity});
+
+        this.similarOdors.sort(function(a, b){return parseInt(b.perc) - parseInt(a.perc)});
+
+        if(this.similarOdors.length > this.maxSimilarOdorsToAdd){
+            this.similarOdors = this.similarOdors.slice(0, this.maxSimilarOdorsToAdd);
         }
-    }
-    
-    public addSimilarOdor(id:string, percentageOfSimilarity:number, types:string[], notes:string[]):void{
-        if(!this.similarOdors.has(id)){
-            this.similarOdors.add(id, {id:id, percentageOfSimilarity:percentageOfSimilarity, types, notes});
-        }
-        else{
-            console.error("similar with id " + id + "already exists with perc:"+this.similarOdors.get(id).percentageOfSimilarity);   
-        }
-    }
-    
-    public hasSimilarOdors():boolean{
-        return this.similarOdors.size()>0;
     }
 
-    public increaseSimilarOdorPercentage(id:string, percentage:number):void{
-        var similarOdor:any = this.similarOdors.get(id);
-        similarOdor.percentageOfSimilarity+=percentage; 
+    public hasSimilarOdors():boolean{
+        return this.similarOdors.length>0;
     }
-    
-    public getSimilarOdorsIterator():KeyMapIterator{
-        return this.similarOdors.getIterator();
+
+    public getSimilarOdors():Odor[]{
+        return this.similarOdors;
     }
 }
