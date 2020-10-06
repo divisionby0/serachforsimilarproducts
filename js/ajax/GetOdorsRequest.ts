@@ -87,6 +87,6 @@ class GetOdorsRequest{
     }
 
     private onFail(xhr:any, status:any, error:any):void {
-        EventBus.dispatchEvent("ODORS_LOAD_ERROR",error);
+        EventBus.dispatchEvent("ODOR_LOAD_FAIL",{xhr:xhr, status:status, error:error});
     }
 }

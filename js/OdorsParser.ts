@@ -1,14 +1,16 @@
-///<reference path="Odor.ts"/>
+
 ///<reference path="lib/collections/KeyMap.ts"/>
+///<reference path="Odor1.ts"/>
 class OdorsParser{
-    private data:any[];
+    private data:Odor1[];
 
     constructor(data:any[]){
         this.data = data;
     }
     
-    public parse():KeyMap<Odor>{
-        var collection:KeyMap<Odor> = new KeyMap<Odor>("odors");
+    public parse():Odor1[]{
+        console.log("FUCK parser");
+        var collection:any[] = new Array();
 
         var i:number;
         for(i=0; i<this.data.length; i++){
@@ -18,9 +20,16 @@ class OdorsParser{
             
             odorData.notes.sort();
 
-            var newOdor:Odor = new Odor(id, name, odorData.notes);
-            collection.add(id, newOdor);
+            console.log("odor data notes:",odorData.notes);
+
+            var newOdor:Odor1 = new Odor1(id, name, odorData.notes);
+            newOdor.clearSimilarOdors();
+            console.log("parsed new odor :",newOdor);
+
+            collection.push(newOdor);
         }
+        console.log("parsed collection: ",collection);
+
 
         return collection;
     }

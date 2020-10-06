@@ -16,10 +16,20 @@ include_once ("php/SimilarFinder.php");
 includeJS();
 includeCss();
 
-
 $catIDs;
 
 // AJAX
+
+add_action( 'wp_ajax_clear_records', 'clear_records_callback' );
+function clear_records_callback(){
+
+    global $wpdb;
+    $results = $wpdb->get_results( "DELETE FROM wp_postmeta WHERE meta_key = 'similar'" );
+
+    echo json_encode($results);
+    wp_die();
+}
+
 add_action( 'wp_ajax_get_odor', 'get_odor_callback' );
 function get_odor_callback(){
     $id = $_POST["id"];
@@ -71,7 +81,9 @@ function update_similarity_callback() {
     for($i=0; $i<sizeof($simDataArray); $i++){
         array_push($simArray, $simDataArray[$i]);
     }
-    
+
+    //delete_post_meta($odorId, 'similar');
+
     $result = update_post_meta( $odorId, 'similar', $similarOdors);
 
     echo json_encode($result);
@@ -145,8 +157,12 @@ function searchforsimilarproducts_admin_page(){
                 <input id="savePluginSettingsButton" type="button" value="Сохранить настройки"/>
             </div>
 
-            <div style="display: block; float: left; text-align: center;">
+            <div style="display: block; float: left; text-align: center; padding-left: 6px;">
                 <input id="searchButton" type="submit" name="SearchButton" value="Поиск похожих" style="margin-top: 2px;"/>
+            </div>
+
+            <div style="display: block; float: right; padding-left:6px; padding-right: 6px;">
+                <input id="clearButton" type="button" value="Очистить сохранения"/>
             </div>
             <div style="width: 100%; display:block; float:left; text-align: center;">
                 <div id="timeElement"></div>
@@ -353,8 +369,8 @@ function includeJS(){
     wp_enqueue_script( 'MapJsonDecoder', plugin_dir_url( __FILE__ ) . '/js/lib/collections/json/MapJsonDecoder.js');
     wp_enqueue_script( 'eventBus', plugin_dir_url( __FILE__ ) . '/js/lib/events/EventBus.js');
 
-    wp_enqueue_script( 'Odor', plugin_dir_url( __FILE__ ) . '/js/Odor.js');
-    wp_enqueue_script( 'OdorsParser', plugin_dir_url( __FILE__ ) . '/js/OdorsParser.js');
+    //wp_enqueue_script( 'Odor', plugin_dir_url( __FILE__ ) . '/js/Odor1.js');
+    //wp_enqueue_script( 'OdorsParser', plugin_dir_url( __FILE__ ) . '/js/OdorsParser.js');
     wp_enqueue_script( 'GetOdorsRequest', plugin_dir_url( __FILE__ ) . '/js/ajax/GetOdorsRequest.js');
     wp_enqueue_script( 'UpdateOdorSimilarityRequest', plugin_dir_url( __FILE__ ) . '/js/ajax/UpdateOdorSimilarityRequest.js');
     wp_enqueue_script( 'similarFinderApp', plugin_dir_url( __FILE__ ) . '/js/SimilarFinderApp.js');
